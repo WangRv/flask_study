@@ -1,6 +1,7 @@
 {% extends "Base.html" %}
 {% from 'bootstrap/form.html' import render_field %}
 {% from 'bootstrap/nav.html' import render_nav_item %}
+{% from  "bootstrap/utils.html" import render_messages %}
 {% block title %}Home{% endblock %}
 
 {% block content %}
@@ -11,10 +12,31 @@
     </nav>
     <div class="hello-form">
         <form method="post" action="{{ url_for("index") }}">
+            {{ form.csrf_token }}
             {{ render_field(form.name) }}
             {{ render_field(form.body) }}
             {{ render_field(form.submit) }}
         </form>
+        <nav>{{ render_messages() }}</nav>
     </div>
+    <h5>{{ messages | length }} messages
+        <small class="float-right">
+            <a href="#bottom" title="Go bottom">&darr;</a>
+        </small>
+    </h5>
+    <div class="list-group">
+        {% for message in messages %}
+            <a class="list-group-item list-group-item-action flex-column">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1 text-success">{{ message.name }}
+                    </h5>
+                    <small>
+                        {{ message.timestamp.strftime("%Y/%m/%d %H%M") }}
+                    </small>
 
+                </div>
+                <p class="mb-1">{{ message.body }}</p>
+            </a>
+        {% endfor %}
+    </div>
 {% endblock %}
