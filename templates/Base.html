@@ -30,7 +30,7 @@
 </main>
 {{ bootstrap.load_js() }}
 {{ moment.include_moment() }}
-
+<script type="application/javascript">{% block script %}{% endblock %}</script>
 {{ moment.locale(auto_detect=True) }}
 </body>
 </html>

@@ -23,6 +23,7 @@ def create_app(config_object, name):
 app, db, mail, bootstrap, moment = create_app(DevConfig, "flask_study")
 from .db_model import *
 from .forms import *
+from .commands import forge
 from .views import *
 
 if __name__ == '__main__':
