@@ -1,11 +1,11 @@
-database_url_formatting = r"postgresql://{user_name}:{password}@hostname/{database}"
+database_url_formatting = r"postgresql://{user_name}:{password}@localhost/{database}"
 
 
 class BasicConfig:
     DEBUG: bool = False
     TESTING: bool = False
     DATABASE_URL: str = database_url_formatting.format(
-        user_name="postgresql",
+        user_name="postgres",
         password="19930403a",
         database="dev")
 
