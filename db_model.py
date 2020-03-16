@@ -6,7 +6,7 @@ id_column = lambda **kwargs: db.Column(db.Integer, primary_key=True,
                                        **kwargs)
 str_column = lambda length, **kwargs: db.Column(db.String(length=length, **kwargs))
 timestamp_column = lambda **kwargs: db.Column(db.DateTime,
-                                              default=datetime.now(), index=True, **kwargs)
+                                              default=datetime.utcnow, index=True, **kwargs)
 
 
 class MessageTable(db.Model):
