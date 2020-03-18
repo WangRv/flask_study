@@ -1,0 +1,7 @@
+{% extends "blog/base_blog.html" %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="display-3"> {{ admin.blgo_title|default("Blog Title") }}</h1>
+        <h4 class="text-muted">&nbsp;{{ admin.blog_subtitle|default("Blog subtitle") }}</h4>
+    </div>
+{% endblock %}

@@ -19,6 +19,7 @@ def create_app(config_object, name):
     app = Flask(name)
     app.config.from_object(config_object)
     registry_extension(app)
+    registry_templates(app)
     registry_shell_context(app)
     # registry blue print
     registry_blueprints(app)
@@ -39,12 +40,16 @@ def registry_blueprints(app: Flask):
 
 
 def registry_templates(app: Flask):
-    pass
+    @app.context_processor
+    def make_template_variable():
+        admin = Admin.query.first()
+        categories = Category.query.order_br(Category.name).all()
+        return dict(admin=admin, categories=categories)
 
 
 def registry_shell_context(app: Flask):
     @app.shell_context_processor
-    def make_shell_db():
+    def make_shell_variable():
         return {"db": db, "app": app}
 
 
