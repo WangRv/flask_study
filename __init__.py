@@ -58,7 +58,7 @@ dev = config_dict.get("dev")
 app = create_app(dev, "flask_study")
 from .db_model import *
 from .forms import *
-from .commands import forge
+from .commands import *
 from .views import *
 
 if __name__ == '__main__':
