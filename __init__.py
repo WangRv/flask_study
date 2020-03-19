@@ -34,23 +34,28 @@ def registry_extension(app: Flask):
     moment.init_app(app)
 
 
-def registry_blueprints(app: Flask):
-    from .blueprints.auth_bp import auth_bp
-    app.register_blueprint(auth_bp)
-
-
 def registry_templates(app: Flask):
     @app.context_processor
     def make_template_variable():
         admin = Admin.query.first()
-        categories = Category.query.order_br(Category.name).all()
+        categories = Category.query.order_by(Category.name).all()
         return dict(admin=admin, categories=categories)
 
 
+def registry_blueprints(app: Flask):
+    from .blueprints.auth_bp import auth_bp
+    from .blueprints.blog_bp import blog_bp
+    # registry blue print
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(blog_bp)
+
+
 def registry_shell_context(app: Flask):
+    from .emails import test_send_email
+
     @app.shell_context_processor
     def make_shell_variable():
-        return {"db": db, "app": app}
+        return {"db": db, "app": app, "send": test_send_email}
 
 
 def registry_errors(app: Flask):
@@ -61,6 +66,7 @@ def registry_errors(app: Flask):
 
 dev = config_dict.get("dev")
 app = create_app(dev, "flask_study")
+from flask import current_app
 from .db_model import *
 from .forms import *
 from .commands import *
