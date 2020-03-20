@@ -1,6 +1,8 @@
 {% from "blog/macros.html" import nav_link %}
 {% from 'bootstrap/nav.html' import render_nav_item %}
 {% from  "bootstrap/utils.html" import render_messages %}
+{% from "bootstrap/pagination.html" import render_pagination %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,15 +19,15 @@
 {% block nav %}
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="/">Blog</a>
+            <a class="navbar-brand" href="{{ url_for("blog.index") }}">Blog</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01"
                     aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarColor01">
                 <ul class="navbar-nav mr-auto">
-                    {{ render_nav_item(endpoint="index","Home") }}
-                    {{ render_nav_item(endpoint="about","Abou") }}
+                    {{ render_nav_item("blog.index","Home") }}
+                    {{ render_nav_item("blog.about","About") }}
                 </ul>
             </div>
         </div>
@@ -33,13 +35,16 @@
 {% endblock %}
 <main class="container">
     {# addition flash message with category #}
-    {% for message in get_flashed_message(with_categories=True) %}
+    {% for message in get_flashed_messages(with_categories=True) %}
         <div class="alert alert-{{ message[0] }}" role="alert">
             <button type="button" class="close" data-dismiss="alert">&times;</button>
-            {{ message[1 }}
+            {{ message[1] }}
         </div>
     {% endfor %}
+
     {% block content %}{% endblock %}
+
+
     {% block footer %}
         <footer></footer>
     {% endblock %}
@@ -47,6 +52,8 @@
 {% block scripy %}
     {{ bootstrap.load_js() }}
     {{ moment.include_moment() }}
+    {{ moment.locale(auto_detect=True) }}
+
 {% endblock %}
 </body>
 </html>

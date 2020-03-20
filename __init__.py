@@ -1,6 +1,7 @@
 """initialization flask app settings"""
+import importlib
 
-from flask import Flask
+from flask import Flask, url_for, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_mail import Mail
@@ -23,6 +24,7 @@ def create_app(config_object, name):
     registry_shell_context(app)
     # registry blue print
     registry_blueprints(app)
+
     return app
 
 
@@ -38,16 +40,20 @@ def registry_templates(app: Flask):
     @app.context_processor
     def make_template_variable():
         admin = Admin.query.first()
-        categories = Category.query.order_by(Category.name).all()
+        categories = Category.query.order_by(Category.id).all()
         return dict(admin=admin, categories=categories)
 
 
 def registry_blueprints(app: Flask):
+    from .db_model import Post, Category,Comment
+    globals()["Post"] = Post
+    globals()["Category"] = Category
+    globals()["Comment"] = Comment
     from .blueprints.auth_bp import auth_bp
     from .blueprints.blog_bp import blog_bp
     # registry blue print
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(blog_bp)
+    app.register_blueprint(auth_bp, url_prefix="/blog")
+    app.register_blueprint(blog_bp, url_prefix="/blog")
 
 
 def registry_shell_context(app: Flask):
@@ -59,9 +65,9 @@ def registry_shell_context(app: Flask):
 
 
 def registry_errors(app: Flask):
-    @app.errorhandler(400)
+    @app.errorhandler(403)
     def bad_request(e):
-        return "400 Bad request"
+        return "403 Not found request"
 
 
 dev = config_dict.get("dev")

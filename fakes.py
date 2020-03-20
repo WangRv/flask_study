@@ -18,7 +18,6 @@ def fake_messages(count):
     db.session.commit()
 
 
-
 def fake_admin():
     admin = Admin(
         username="admin",
@@ -105,6 +104,8 @@ def fake_comments(count=50):
     db.session.commit()
     # reply
     for i in range(salt):
+        comment = Comment.query.get(random.randint(1, Comment.query.count()))
+        post = comment.post
         comment = Comment(
             author=fake.name(),
             email=fake.email(),
@@ -112,8 +113,8 @@ def fake_comments(count=50):
             body=fake.sentence(),
             timestamp=fake.date_time_this_year(),
             reviewed=True,  # This is allowed showing on the post.
-            replied=Comment.query.get(random.randint(1, Comment.query.count())),
-            post=Post.query.get(random.randint(1, Post.query.count()))
+            replied=comment,
+            post=post
 
         )
         db.session.add(comment)
