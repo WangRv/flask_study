@@ -2,6 +2,7 @@
 {% from 'bootstrap/nav.html' import render_nav_item %}
 {% from  "bootstrap/utils.html" import render_messages %}
 {% from "bootstrap/pagination.html" import render_pagination %}
+{% from 'bootstrap/form.html' import render_form %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -11,7 +12,12 @@
         <title>{% block title %} Blog{% endblock %}</title>
         <link rel="icon" href="{{ url_for("static",filename="favicon.ico") }}">
         {% block css %}
-            {{ bootstrap.load_css() }}
+            {% if not request.cookies.get("theme") %}
+                {{ bootstrap.load_css() }}
+            {% else %}
+                <link rel="stylesheet"
+                      href="{{ url_for("static",filename='css/%s.min.css' %request.cookies.get("theme")) }}">
+            {% endif %}
         {% endblock %}
     {% endblock %}
 </head>

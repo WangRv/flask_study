@@ -17,7 +17,7 @@ mail = Mail()
 
 
 def create_app(config_object, name):
-    app = Flask(name)
+    app = Flask(name, static_folder="static")
     app.config.from_object(config_object)
     registry_extension(app)
     registry_templates(app)
@@ -45,10 +45,15 @@ def registry_templates(app: Flask):
 
 
 def registry_blueprints(app: Flask):
-    from .db_model import Post, Category,Comment
+    from .db_model import Post, Category, Comment
     globals()["Post"] = Post
     globals()["Category"] = Category
     globals()["Comment"] = Comment
+    from .emails import send_new_comment_email, send_new_reply_email
+    global send_new_reply_email, send_new_comment_email
+    from .forms import AdminCommentForm, CommentForm
+    globals()["AdminCommentForm"] = AdminCommentForm
+    globals()["CommentForm"] = CommentForm
     from .blueprints.auth_bp import auth_bp
     from .blueprints.blog_bp import blog_bp
     # registry blue print
@@ -65,9 +70,9 @@ def registry_shell_context(app: Flask):
 
 
 def registry_errors(app: Flask):
-    @app.errorhandler(403)
+    @app.errorhandler(404)
     def bad_request(e):
-        return "403 Not found request"
+        return "404 Not found request"
 
 
 dev = config_dict.get("dev")
@@ -76,6 +81,7 @@ from flask import current_app
 from .db_model import *
 from .forms import *
 from .commands import *
+from .emails import *
 from .views import *
 
 if __name__ == '__main__':

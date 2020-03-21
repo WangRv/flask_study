@@ -38,7 +38,7 @@
                                         {% if comment.replied %}<span class="badge badge-light">Reply</span>{% endif %}
                                     </h5>
                                     <small data-toggle="tooltip" data-placement="top" data-delag="500"
-                                        data-timestamp="{{ comment.timestamp.strftime('%Y-%m-%dT%H:%M:%SZ') }}">
+                                           data-timestamp="{{ comment.timestamp.strftime('%Y-%m-%dT%H:%M:%SZ') }}">
                                         {{ moment(comment.timestamp).fromNow() }}
                                     </small>
                                 </div>
@@ -57,12 +57,23 @@
                         {% endfor %}
 
                     </ur>
-                        <div class="page-footer">{{ render_pagination(pagination) }}</div>
+                    <div class="page-footer">{{ render_pagination(pagination) }}</div>
 
                 {% else %}
                     <div class="tip"><h5>No comments</h5></div>
                 {% endif %}
+                {% if request.args.get("reply") %}
+                    <div class="alert alert-dark">
+                        Reply to <strong>{{ request.args.get("author") }}</strong>
+                        <a class="float-right" href="{{ url_for(".show_post",post_id=post.id) }}">Cancel</a>
+                        <div class="form">{{ render_form(form,action=url_for(".show_post",post_id=post.id,reply=request.args.get("reply"))) }}</div>
+
+                    </div>
+                {% else %}
+                    <div class="form">{{ render_form(form,action=url_for(".show_post",post_id=post.id)) }}</div>
+                {% endif %}
             </div>
+
             <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target=".postLinkModal">Share
             </button>
             <div class="modal fade postLinkModal" tabindex="-1" role="dialog" aria-hidden="true">

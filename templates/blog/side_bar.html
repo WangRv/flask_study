@@ -1,3 +1,16 @@
+<div class="dropdown">
+    <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenButton"
+            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        Change Theme
+    </button>
+    <div class="dropdown-menu" aria-labelledby="dropdownMenButton">
+        {% for theme,name in config.BLOG_THEMES.items() %}
+            <a class="dropdown-item"
+               href="{{ url_for('.change_theme',theme_name=theme,next=request.full_path) }}">
+                {{ name }}</a>
+        {% endfor %}
+    </div>
+</div><br>
 {% if links %}
     <div class="card mb-3">
         <div class="card-header">Links</div>
@@ -10,18 +23,19 @@
         </ul>
     </div>
 {% endif %}
+
 {% if categories %}
-<div class="card mb-3">
-    <div class="card header">Categories</div>
-    <ul class="list-group list-group-flush">
-        {% for category  in categories %}
-        <li class="list-group-item list-group-item-action justify-content-between align-items-center">
-            <a href="{{ url_for("blog.show_category",category_id = category.id) }}">
-                {{ category.name }}
-            </a>
-            <span class="badge badge-primary badge-pill">{{ category.posts|length }}</span>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
+    <div class="card mb-3">
+        <div class="card header">Categories</div>
+        <ul class="list-group list-group-flush">
+            {% for category  in categories %}
+                <li class="list-group-item list-group-item-action justify-content-between align-items-center">
+                    <a href="{{ url_for("blog.show_category",category_id = category.id) }}">
+                        {{ category.name }}
+                    </a>
+                    <span class="badge badge-primary badge-pill">{{ category.posts|length }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
 {% endif %}

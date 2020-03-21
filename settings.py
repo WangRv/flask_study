@@ -3,7 +3,7 @@ import os
 
 database_url_formatting = r"postgresql://{user_name}:{password}@localhost/{database}"
 
-with open("./.flaskenv", "r") as f:
+with open(r"D:/flask_env/.flaskenv", "r") as f:
     # import env variables
     for env_line in f.readlines():
         if env_line.startswith("\n"):
@@ -33,6 +33,11 @@ class DevConfig(BasicConfig):
     MAIL_USERNAME: str = os.getenv("email_username")
     MAIL_USE_SSL: bool = bool(os.getenv("email_ssl"))
     MAIL_DEFAULT_SENDER: str = os.getenv("email_default_sender")
+    # @todo User
+    ADMIN_EMAIL: str = os.getenv("blog_admin")
+
+    # @todo Themes
+    BLOG_THEMES: dict = eval(os.getenv("blog_themes"))
 
 
 class Production(DevConfig):
