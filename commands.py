@@ -44,3 +44,30 @@ def forge_blog_data(category, post, comment):
 
     # successfully creating fake data.
     click.echo("Done.")
+
+
+@app.cli.command()
+@click.option("--username", prompt=True, help="The username used to login.")
+@click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True, help="The password used to login")
+def init_admin(username, password):
+    """building admin account, just for you."""
+    click.echo("Initializing the database")
+    from .fakes import db, Admin
+    db.create_all()
+    admin = Admin.query.first()
+    if admin:
+        click.echo("The admin already exists,updating")
+        admin.username = username
+        admin.set_password(password)
+    else:
+        click.echo("Creating the temporary administrator account...")
+        admin = Admin(
+            username=username,
+            blog_title="Blog",
+            blog_sub_title="No ,I'm the real things",
+            about="Admin is me",
+        )
+        admin.set_password(password)
+    db.session.add(admin)
+    db.session.commit()
+    click.echo("already created administrator account successfully")

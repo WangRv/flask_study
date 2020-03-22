@@ -9,7 +9,8 @@ from . import (db,
                Comment,
                flash,
                redirect, abort,
-               make_response)
+               make_response,
+               current_user)
 # Form
 from . import AdminCommentForm, CommentForm
 # Email
@@ -53,8 +54,7 @@ def show_post(post_id):
         order_by(Comment.timestamp.desc()).paginate(page, per_page)
     comments = pagination.items
     # user control logic
-    current_user = False  # virtual user
-    if current_user:
+    if current_user.is_authenticated:
         # administrator form
         form = AdminCommentForm()
         form.author.data = "admin"
@@ -93,6 +93,14 @@ def show_post(post_id):
             send_new_comment_email(post)
         return redirect(url_for(".show_post", post_id=post.id))
     return render_template("blog/post.html", post=post, pagination=pagination, comments=comments, form=form)
+
+
+@blog_bp.route("/delete-post/<int:post_id>",methods=["POST"])
+def delete_post(post_id):
+    post = Post.query.get(post_id)
+    db.session.delete(post)
+    db.session.commit()
+    return redirect(url_for(".index"))
 
 
 @blog_bp.route("/reply/comment/<int:comment_id>")

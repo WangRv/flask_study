@@ -1,4 +1,6 @@
 from datetime import datetime
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from . import db
 
 # generates database column functions
@@ -21,7 +23,7 @@ class MessageTable(db.Model):
     timestamp = timestamp_column()
 
 
-class Admin(db.Model):
+class Admin(db.Model, UserMixin):
     """administrator model of blog project"""
     id = id_column()
     username = str_column(30)
@@ -31,9 +33,24 @@ class Admin(db.Model):
     name = str_column(30)
     about = text_column()
 
-    def set_password(self,password):
-        """use password to convert hash password and to save  db"""
-        pass
+    @property
+    def password(self):
+        raise AttributeError("This attribute is not readable")
+
+    @password.setter
+    def password(self, password):
+        """use password to convert hash password and to save db"""
+        self.password_hash = generate_password_hash(password)
+
+    def set_password(self, password):
+        """Be equal to call above function"""
+        self.password = password
+
+    def check_password(self, password):
+        """use user hash password  to check for authenticity"""
+        return check_password_hash(self.password_hash, password)
+
+
 class Category(db.Model):
     """blog item category model"""
     id = id_column()

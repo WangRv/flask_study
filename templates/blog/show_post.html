@@ -6,6 +6,12 @@
         <p>
             {{ post.body|striptags|truncate }}
             <small> <a href="{{ url_for(".show_post",post_id=post.id) }}">Read More</a></small>
+            <small>
+                <form method="post" action="{{ url_for(".delete_post",post_id=post.id ) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="submit" value="delete post">
+                </form>
+            </small>
         </p>
         <small>
             Comments:<a href="{{ url_for(".show_post",post_id=post.id) }}#comments">
@@ -20,13 +26,13 @@
         </small>
     {% endfor %}
     <div class="page-footer">{{ render_pagination(pagination) }}</div>
-{#{% else %}#}
-{#    <div class="tip">#}
-{#        <h5>#}
-{#            Not posts yet.#}
-{#        </h5>#}
-{#        {% if current_user.is_authenticated %}#}
-{#            <a href="{{ url_for("admin.new_post") }}">Write Now</a>#}
-{#        {% endif %}#}
-{#    </div>#}
+    {#{% else %}#}
+    {#    <div class="tip">#}
+    {#        <h5>#}
+    {#            Not posts yet.#}
+    {#        </h5>#}
+    {#        {% if current_user.is_authenticated %}#}
+    {#            <a href="{{ url_for("admin.new_post") }}">Write Now</a>#}
+    {#        {% endif %}#}
+    {#    </div>#}
 {% endif %}
