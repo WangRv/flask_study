@@ -17,6 +17,7 @@
             {% else %}
                 <link rel="stylesheet"
                       href="{{ url_for("static",filename='css/%s.min.css' %request.cookies.get("theme")) }}">
+                <link rel="stylesheet" href="/static/css/style.css">
             {% endif %}
         {% endblock %}
     {% endblock %}
@@ -35,38 +36,38 @@
                     {{ render_nav_item("index","Home") }}
                     {{ render_nav_item("blog.about","About") }}
                 </ul>
-                <ul class="nav navbar-nav navbar-right">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button"
-                               aria-haspopup="true" aria-expanded="false">
-                                New<span class="caret"></span>
-                            </a>
-                            <div class="dropdown-menu" aria-labelledby="navbarDropDown">
-                                <a class="dropdown-item" href="{{ url_for('admin.new_post') }}">Post</a>
-                                <a class="dropdown-item" href="{{ url_for('admin.new_category') }}">Category</a>
-                            </div>
+                  <ul class="nav navbar-nav navbar-right">
+        {% if current_user.is_authenticated %}
+        <li class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button"
+               aria-haspopup="true" aria-expanded="false">
+                New<span class="caret"></span>
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropDown">
+                <a class="dropdown-item" href="{{ url_for('.new_post') }}">Post</a>
+                <a class="dropdown-item" href="{{ url_for('.new_category') }}">Category</a>
+            </div>
 
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button"
-                               aria-haspopup="true" aria-expanded="false">
-                                Manage<span class="caret"></span>
-                                {% if   unreade_comments %}
-                                    <span class="badge badge-success">new</span>
-                                {% endif %}
-                            </a>
-                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item" href="{{ url_for("admin.manage_post") }}">Post</a>
-                                <a class="dropdown-item" href="{{ url_for("admin.manage_categories") }}">Category</a>
-                                <a class="dropdown-item" href="{{ url_for("admin.manage_comment") }}">Comment
-                                    {% if unread_comments %}
-                                        <span class="badge badge-success">{{ unread_comments }}</span>
-                                    {% endif %}</a>
-                            </div>
-                        </li>
-                    {% endif %}
-                </ul>
+        </li>
+        <li class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button"
+               aria-haspopup="true" aria-expanded="false">
+                Manage<span class="caret"></span>
+                {% if   unreade_comments %}
+                    <span class="badge badge-success">new</span>
+                {% endif %}
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <a class="dropdown-item" href="{{ url_for(".manage_post") }}">Post</a>
+                <a class="dropdown-item" href="{{ url_for(".manage_categories") }}">Category</a>
+                <a class="dropdown-item" href="{{ url_for(".manage_comment") }}">Comment
+                    {% if unread_comments %}
+                        <span class="badge badge-success">{{ unread_comments }}</span>
+                    {% endif %}</a>
+            </div>
+        </li>
+    {% endif %}
+    </ul>
             </div>
         </div>
 
@@ -80,10 +81,7 @@
             {{ message[1] }}
         </div>
     {% endfor %}
-    {% block content %}
-    {% endblock %}
-
-
+    {% block content %}{% endblock %}
     {% block footer %}
         <footer>
             <small>

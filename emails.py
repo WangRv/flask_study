@@ -1,4 +1,5 @@
-from . import mail, url_for, current_app
+from .extension_module import mail
+from flask import url_for,current_app
 from flask_mail import Message
 
 comment_html = """

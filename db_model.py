@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from . import db
+from .extension_module import db
 
 # generates database column functions
 id_column = lambda **kwargs: db.Column(db.Integer, primary_key=True,
@@ -71,6 +71,7 @@ class Post(db.Model):
 
     # the comment into post
     comments = relationship_column("Comment", back_populates="post", cascade="all")
+    can_comment = bool_column(default=True)
 
 
 class Comment(db.Model):

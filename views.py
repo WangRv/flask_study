@@ -1,7 +1,8 @@
 from flask import flash, redirect, url_for, render_template
-from . import app, db, MessageTable, HelloForm
-
-
+from .extension_module import db
+from .db_model import MessageTable
+from .forms import HelloForm
+from . import app
 @app.route('/', methods=["POST", "GET"])
 def index():
     # query all message from database

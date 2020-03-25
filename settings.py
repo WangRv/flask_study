@@ -39,6 +39,9 @@ class DevConfig(BasicConfig):
     # @todo Themes
     BLOG_THEMES: dict = eval(os.getenv("blog_themes"))
 
+    # @todo Per page
+    BLOG_POST_PER_PAGE = 15
+
 
 class Production(DevConfig):
     DEBUG = False

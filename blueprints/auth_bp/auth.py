@@ -1,5 +1,9 @@
-from . import auth_bp, current_user, redirect, url_for, render_template, flash, LoginForm
-from . import Admin, login_user, logout_user, redirect_back, login_required
+from flask import redirect, flash, render_template, url_for
+from . import auth_bp
+from ...utils import redirect_back
+from ...forms import LoginForm
+from ...db_model import Admin
+from flask_login import current_user, login_required, login_user, logout_user
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -15,7 +19,7 @@ def login():
         if admin:
             if username == admin.username and admin.check_password(password):
                 login_user(admin, remember)
-                flash("Success login.")
+                flash("Success login.", "success")
                 return redirect_back()
             else:
                 flash("Not account", "warning")

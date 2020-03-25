@@ -1,20 +1,18 @@
-from . import (db,
-               blog_bp,
-               render_template,
-               url_for,
-               request,
-               current_app,
-               Post,
-               Category,
-               Comment,
-               flash,
-               redirect, abort,
-               make_response,
-               current_user)
+from flask import (
+    render_template,
+    url_for, request,
+    current_app,
+    abort,
+    make_response,
+    flash, redirect)
+from . import blog_bp
+from flask_login import current_user
 # Form
-from . import AdminCommentForm, CommentForm
+from ...forms import AdminCommentForm, CommentForm
 # Email
-from . import send_new_reply_email, send_new_comment_email
+from ...emails import send_new_reply_email, send_new_comment_email
+# Db
+from ...db_model import db, Category, Post, Comment
 
 
 @blog_bp.route("/", defaults={"page": 1})
@@ -50,7 +48,7 @@ def show_post(post_id):
     post = Post.query.get_or_404(post_id)
     page = request.args.get("page", 1, type=int)
     per_page = current_app.config.get("COMMENT_PER_PAGE", 20)
-    pagination = Comment.query.with_parent(post).filter_by(reviewed=True). \
+    pagination = Comment.query.with_parent(post). \
         order_by(Comment.timestamp.desc()).paginate(page, per_page)
     comments = pagination.items
     # user control logic
@@ -95,7 +93,7 @@ def show_post(post_id):
     return render_template("blog/post.html", post=post, pagination=pagination, comments=comments, form=form)
 
 
-@blog_bp.route("/delete-post/<int:post_id>",methods=["POST"])
+@blog_bp.route("/delete-post/<int:post_id>", methods=["POST"])
 def delete_post(post_id):
     post = Post.query.get(post_id)
     db.session.delete(post)

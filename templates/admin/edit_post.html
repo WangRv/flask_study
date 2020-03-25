@@ -1,0 +1,12 @@
+{% extends "admin/base_blog.html" %}
+{% block title %}Edit Post{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <h1>Edit Post</h1>
+        {{ render_form(form) }}
+    </div>
+{% endblock %}
+{% block scripy %}
+{{ super() }}
+{{ ckeditor.load() }}
+{% endblock %}

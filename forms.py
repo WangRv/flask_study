@@ -15,7 +15,7 @@ from wtforms.validators import (
     URL,
     Optional)
 
-from . import Category
+from .db_model import Category
 
 string_filed = lambda name, *validators: StringField(name, validators=[*validators])
 bool_filed = lambda name, *validators: BooleanField(name, validators=[*validators])
@@ -44,14 +44,14 @@ class LoginForm(FlaskForm):
 # Post Form
 class PostForm(FlaskForm):
     title = string_filed("Title", DataRequired(), Length(1, 60))
-    category = select_filed("Category", oerce=int, default=1)
-    body = ck_filed("body", DataRequired())
+    category = select_filed("Category", coerce=int, default=1)
+    body = CKEditorField("body", validators=[DataRequired()])
     submit = submit_filed(None)
 
     def __init__(self, *args, **kwargs):
         super(PostForm, self).__init__(*args, **kwargs)
         self.category.choices = [(category.id, category.name) for category in
-                                 Category.query.oder_by(Category.name).all()]
+                                 Category.query.order_by(Category.name).all()]
 
 
 # Category Form
@@ -70,7 +70,7 @@ class CommentForm(FlaskForm):
 
 
 # admin comment
-class AdminCommentForm(FlaskForm):
+class AdminCommentForm(CommentForm):
     author = HiddenField()
     email = HiddenField()
     site = HiddenField()

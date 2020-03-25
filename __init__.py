@@ -1,27 +1,18 @@
 """initialization flask app settings"""
-import importlib
 
-from flask import Flask, url_for, current_app
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_mail import Mail
-from flask_bootstrap import Bootstrap
-from flask_moment import Moment
-from flask_login import LoginManager
-from flask_wtf.csrf import  CSRFProtect
+from flask import Flask
+from flask_login import current_user
+
 # private settings
+from .extension_module import (
+    bootstrap, moment, ck_editor, db, csrf, mail, login_manager, Migrate)
 from .settings import config_dict
 
-bootstrap = Bootstrap()
-db = SQLAlchemy()
-login_manager = LoginManager()
-moment = Moment()
-mail = Mail()
-csrf = CSRFProtect()
 
 def create_app(config_object, name):
     app = Flask(name, static_folder="static")
     app.config.from_object(config_object)
+
     registry_extension(app)
     registry_templates(app)
     registry_shell_context(app)
@@ -39,35 +30,34 @@ def registry_extension(app: Flask):
     login_manager.init_app(app)
     Migrate(app, db)
     moment.init_app(app)
+    ck_editor.init_app(app)
 
 
 def registry_templates(app: Flask):
+    from .db_model import Admin, Category, Comment
     @app.context_processor
     def make_template_variable():
         admin = Admin.query.first()
         categories = Category.query.order_by(Category.id).all()
         return dict(admin=admin, categories=categories)
 
+    @app.context_processor
+    def make_admin_variable():
+        if current_user.is_authenticated:
+            unread_comments = Comment.query.filter_by(reviewed=False).count()
+        else:
+            unread_comments = None
+        return dict(unread_comments=unread_comments)
+
 
 def registry_blueprints(app: Flask):
-    from .db_model import Post, Category, Comment, Admin
-    globals()["Post"] = Post
-    globals()["Category"] = Category
-    globals()["Comment"] = Comment
-    globals()["Admin"] = Admin
-    from .emails import send_new_comment_email, send_new_reply_email
-    global send_new_reply_email, send_new_comment_email
-    from .forms import AdminCommentForm, CommentForm, LoginForm
-    globals()["AdminCommentForm"] = AdminCommentForm
-    globals()["CommentForm"] = CommentForm
-    globals()["LoginForm"] = LoginForm
-    from .utils import redirect_back
-    global redirect_back
     from .blueprints.auth_bp import auth_bp
     from .blueprints.blog_bp import blog_bp
+    from .blueprints.admin_bp import admin_bp
     # registry blue print
     app.register_blueprint(auth_bp, url_prefix="/blog")
     app.register_blueprint(blog_bp, url_prefix="/blog")
+    app.register_blueprint(admin_bp, url_prefix="/blog")
 
 
 def registry_shell_context(app: Flask):
@@ -86,12 +76,9 @@ def registry_errors(app: Flask):
 
 dev = config_dict.get("dev")
 app = create_app(dev, "flask_study")
-from flask import current_app
-from .db_model import *
-from .forms import *
-from .commands import *
-from .emails import *
+
 from .utils import *
+# import index of web site
 from .views import *
 
 if __name__ == '__main__':
