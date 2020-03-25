@@ -19,7 +19,6 @@ def create_app(config_object, name):
 
 app, db, mail = create_app(DevConfig, "flask_study")
 
-from .views import *
 
 if __name__ == '__main__':
     app.run()
