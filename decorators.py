@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import Markup, flash, url_for, redirect
+from flask import Markup, flash, url_for, redirect, abort
 from flask_login import current_user
 
 
@@ -16,3 +16,16 @@ def confirm_user(func):
         return func(*args, **kwargs)
 
     return decorate_function
+
+
+def permission_required(permission_data):
+    def decorator(func):
+        @wraps(func)
+        def decorated_function(*args, **kwargs):
+            if not current_user.can(permission_data):
+                abort(403)
+            return func(*args, **kwargs)
+
+        return decorated_function
+
+    return decorator

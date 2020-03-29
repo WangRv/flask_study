@@ -17,6 +17,7 @@ def create_app(config_object, name):
     # necessary initialization
     init_extension(app)
     init_blueprint(app)
+    init_command(app)
     return app
 
 
@@ -36,6 +37,11 @@ def init_blueprint(app: Flask):
     from blueprints.main_bp import main_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
+
+
+def init_command(app: Flask):
+    from commands import register_commands
+    register_commands(app)
 
 
 app = create_app(DevConfig, __name__)
