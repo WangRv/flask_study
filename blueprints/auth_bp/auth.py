@@ -11,7 +11,7 @@ from constant import Operations
 from emails import send_token_confirm_email, send_reset_password_email
 
 
-@auth_bp.route("/register", methods=[method.value for method in HttpMethods])
+@auth_bp.route("/register", methods=HttpMethods.methods_to_list())
 def register():
     # if user is already logging.
     if current_user.is_authenticated:
@@ -36,7 +36,7 @@ def register():
     return render_template("auth/register.html", form=form)
 
 
-@auth_bp.route("/login", methods=[method.value for method in HttpMethods])
+@auth_bp.route("/login", methods=HttpMethods.methods_to_list())
 def login():
     # @todo main.index site is unfinished
     if current_user.is_authenticated:
@@ -93,7 +93,7 @@ def logout():
     return redirect_back()
 
 
-@auth_bp.route("/forget-password", methods=[method.value for method in HttpMethods])
+@auth_bp.route("/forget-password", methods=HttpMethods.methods_to_list())
 def forget_password():
     if current_user.is_authenticated:
         return redirect_back()
@@ -111,7 +111,7 @@ def forget_password():
     return render_template("auth/reset_password.html", form=forget_form)
 
 
-@auth_bp.route("/reset-password/<token>", methods=[method.value for method in HttpMethods])
+@auth_bp.route("/reset-password/<token>", methods=HttpMethods.methods_to_list())
 def reset_password(token):
     if current_user.is_authenticated:
         redirect(url_for("main.index"))
