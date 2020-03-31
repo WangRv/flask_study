@@ -22,7 +22,7 @@ def permission_required(permission_data):
     def decorator(func):
         @wraps(func)
         def decorated_function(*args, **kwargs):
-            if not current_user.can(permission_data):
+            if not current_user.can_permission(permission_data):
                 abort(403)
             return func(*args, **kwargs)
 

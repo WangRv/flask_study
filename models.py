@@ -20,13 +20,16 @@ class User(db.Model, UserMixin):
     confirmed = db.Column(db.Boolean, default=False)
     # role relation with user, user only use one role. many to one...
     role_id = db.Column(db.Integer, db.ForeignKey("role.id"))
-    role = db.relationship("Role", back_populates="users")
+    role = db.relationship("Role", back_populates="users", uselist=False)
+    # uploaded photos
+    photos = db.relationship("Photo", back_populates="author", cascade="all")
 
     def set_role(self):
         if self.role is None:
             if self.email == current_app.config["MAIL_DEFAULT_SENDER"]:
-                # administrator user
+                # administrator have is not required to confirm identity data.
                 self.role = Role.query.filter_by(name="Administrator").first()
+                self.confirmed = True
             else:
                 self.role = Role.query.filter_by(name="User").first()
             db.session.commit()
@@ -49,7 +52,7 @@ class User(db.Model, UserMixin):
 
     # -------------------------------------------------------------------------------------------------------
     def can_permission(self, permission_data: int):
-        return self.role.permission & permission_data == permission_data
+        return self.role.permission.data & permission_data == permission_data
 
     @property
     def is_admin(self):
@@ -66,7 +69,9 @@ class User(db.Model, UserMixin):
 class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(30), unique=True)
-    permission = db.relationship("Permission", back_populates="roles")
+    permission_id = db.Column(db.Integer, db.ForeignKey("permission.id"))
+
+    permission = db.relationship("Permission", back_populates="roles", uselist=False)
 
     # user
     users = db.relationship("User", back_populates="role")
@@ -84,7 +89,7 @@ class Role(db.Model):
 
             if not role:
                 role = Role(name=role_name)
-                role.permission = [Permission(data=permission)]
+                role.permission = Permission(data=permission)
                 db.session.add(role)
             permission = Permission.query.filter_by(data=permission).first()
             if not permission:
@@ -103,5 +108,19 @@ class Permission(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(db.Integer, unique=True)
-    role_id = db.Column(db.Integer, db.ForeignKey("role.id"))
     roles = db.relationship("Role", back_populates="permission")
+
+
+# Photo
+class Photo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.String(500))
+    filename = db.Column(db.String(64))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # relation user
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    author = db.relationship("User", back_populates="photos", uselist=False)
+    # file name fields that are decided size
+    filename_s = db.Column(db.String(64))
+    filename_m = db.Column(db.String(64))

@@ -1,7 +1,7 @@
 import os
 
 database_url_formatting = r"postgresql://{user_name}:{password}@localhost/{database}"
-
+base_dir = os.path.abspath(os.path.dirname(__file__))
 with open(r"D:/flask_env/.flaskenv", "r") as f:
     # import env variables
     for env_line in f.readlines():
@@ -31,3 +31,16 @@ class DevConfig(BasicConfig):
     MAIL_USERNAME: str = os.getenv("email_username")
     MAIL_USE_SSL: bool = bool(os.getenv("email_ssl"))
     MAIL_DEFAULT_SENDER: str = os.getenv("email_default_sender")
+    # upload file settings
+    DROPZONE_MAX_FILE_SIZE = 3  # 3MB
+    DROPZONE_MAX_FILES = 30  # supporting maximum thirty files.
+    DROPZONE_ALLOWED_FILE_TYPE = "image"
+    DROPZONE_ENABLE_CSRF = True
+    # privatization file size
+    MAX_CONTENT_LENGTH = 3 * 1024 * 1024
+    # uploads path
+    UPLOAD_PATH = os.path.join(base_dir, "uploads")
+    # image size variable
+    PHOTO_SIZE = {"small": 400, "medium": 800}
+    PHOTO_SUFFIX = {PHOTO_SIZE["small"]: "_s", # photo file name
+                    PHOTO_SIZE["medium"]: "_m"}

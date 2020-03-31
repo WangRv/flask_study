@@ -8,6 +8,7 @@ from flask_wtf import CSRFProtect
 from flask_ckeditor import CKEditor
 from flask_bootstrap import Bootstrap
 from flask_mail import Mail
+from flask_dropzone import Dropzone
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -17,6 +18,7 @@ ck_editor = CKEditor()
 bootstrap = Bootstrap()
 mail = Mail()
 csrf = CSRFProtect()
+drop_zone = Dropzone()
 
 
 class Guest(AnonymousUserMixin):
@@ -24,7 +26,9 @@ class Guest(AnonymousUserMixin):
     def is_admin(self):
         return False
 
-    def can(self, permission_name):
+    @staticmethod
+    def can_permission(permission_name):
+        """always return False """
         return False
 
 

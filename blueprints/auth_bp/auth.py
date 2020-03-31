@@ -26,6 +26,7 @@ def register():
         # init user object to registry web
         user = User(name=name, email=email, username=username)
         user.set_password(password)
+        user.set_role()  # default role is User.
         db.session.add(user)
         db.session.commit()
         token = generate_token(user=user, operation=Operations.CONFIRM.value)
@@ -38,7 +39,6 @@ def register():
 
 @auth_bp.route("/login", methods=HttpMethods.methods_to_list())
 def login():
-    # @todo main.index site is unfinished
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))
 
@@ -51,7 +51,7 @@ def login():
         if user and user.check_password(password):
             login_user(user, remember)
 
-            return redirect(url_for(".reconfirm"))
+            return redirect_back()
         else:
             flash("Invalid email or password", "warning")
 
@@ -72,9 +72,9 @@ def confirm(token):
         return redirect(url_for(".reconfirm"))
 
 
-@auth_bp.route("/resend-confirm-email")
+@auth_bp.route("/resend-confirm-email", methods=[HttpMethods.post.value])
 @login_required
-def reconfirm():
+def resend_confirm_email():
     if current_user.confirmed:
         return redirect(url_for("main.index"))
     # User can send to confirm email again.
@@ -85,7 +85,7 @@ def reconfirm():
         return redirect(url_for(".login"))
 
 
-@auth_bp.route("/logout", methods=[HttpMethods.post.value])
+@auth_bp.route("/logout", methods=HttpMethods.methods_to_list())
 @login_required
 def logout():
     if current_user.is_authenticated:
