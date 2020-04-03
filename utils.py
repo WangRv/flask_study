@@ -66,7 +66,7 @@ def resize_image(image, filename, base_width):
         return filename + ext  # not resize the image.
     w_percent = (base_width / float(img.size[0]))  # width percent
     h_size = int(img.size[1]) * w_percent
-    img = img.resize((base_width, h_size), Image.ANTIALIAS)
+    img = img.resize((base_width, int(h_size)), Image.ANTIALIAS)
 
     filename += current_app.config["PHOTO_SUFFIX"][base_width] + ext
     img.save(os.path.join(current_app.config["UPLOAD_PATH"], filename), optimize=True, quality=True)

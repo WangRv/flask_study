@@ -1,8 +1,11 @@
+import os
 from datetime import datetime
 from flask import current_app
+from flask_avatars import Identicon
 from werkzeug.security import generate_password_hash, check_password_hash  # password security
 from flask_login import UserMixin
 from extension import db
+from utils import resize_image
 
 
 class User(db.Model, UserMixin):
@@ -23,6 +26,22 @@ class User(db.Model, UserMixin):
     role = db.relationship("Role", back_populates="users", uselist=False)
     # uploaded photos
     photos = db.relationship("Photo", back_populates="author", cascade="all")
+    # user portrait
+    avatar_s = db.Column(db.String(64))
+    avatar_m = db.Column(db.String(64))
+    avatar_l = db.Column(db.String(64))
+
+    def __init__(self, *args, **kwargs):
+        super(User, self).__init__(*args, **kwargs)
+        self.generate_avatar()
+
+    def generate_avatar(self):
+        avatar = Identicon()
+        filenames = avatar.generate(self.username)
+        self.avatar_s = filenames[0]
+        self.avatar_m = filenames[1]
+        self.avatar_l = filenames[2]
+        db.session.commit()
 
     def set_role(self):
         if self.role is None:
@@ -59,7 +78,7 @@ class User(db.Model, UserMixin):
         return self.can_permission(Permission.ADMINISTRATOR)
 
 
-# Many to Many relation with User.
+# Many to Many relation with User. # not use now.
 # roles_permissions = db.Table("roles_permissions",
 #                              db.Column("role_id", db.Integer, db.ForeignKey("role.id")),
 #                              db.Column("permission_id", db.Integer, db.ForeignKey("permission.id")))
@@ -81,7 +100,8 @@ class Role(db.Model):
     def init_role():
         roles_mapper = dict(Locked=Permission.FOLLOW | Permission.COLLECT,
                             User=Permission.FOLLOW | Permission.COLLECT | Permission.COMMENT | Permission.UPLOAD,
-                            Moderator=Permission.FOLLOW | Permission.COLLECT | Permission.COMMENT | Permission.UPLOAD | Permission.MODERATE,
+                            Moderator=Permission.FOLLOW | Permission.COLLECT | Permission.COMMENT
+                                      | Permission.UPLOAD | Permission.MODERATE,
                             Administrator=0xff)  # all permission
 
         for role_name, permission in roles_mapper.items():
@@ -124,3 +144,24 @@ class Photo(db.Model):
     # file name fields that are decided size
     filename_s = db.Column(db.String(64))
     filename_m = db.Column(db.String(64))
+    # report flag count
+    flag = db.Column(db.Integer, default=0)
+
+    def generate_different_size_photo(self):
+        """if photo without other size format that generate these"""
+        if not self.filename_s and not self.filename_m:
+            f_path = os.path.join(current_app.config["UPLOAD_PATH"], self.filename)
+
+            self.filename_s = resize_image(f_path, self.filename, 400)
+            self.filename_m = resize_image(f_path, self.filename, 800)
+            db.session.commit()
+
+
+@db.event.listens_for(Photo, "after_delete", named=True)
+def delete_photos(**kwargs):
+    """delete image files by the path"""
+    target = kwargs["target"]
+    for filename in [target.filename, target.filename_s, target.filename_m]:
+        path = os.path.join(current_app.config["UPLOAD_PATH"], filename)
+        if os.path.exists(path):
+            os.remove(path)  # delete file

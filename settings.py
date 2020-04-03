@@ -42,5 +42,10 @@ class DevConfig(BasicConfig):
     UPLOAD_PATH = os.path.join(base_dir, "uploads")
     # image size variable
     PHOTO_SIZE = {"small": 400, "medium": 800}
-    PHOTO_SUFFIX = {PHOTO_SIZE["small"]: "_s", # photo file name
+    PHOTO_SUFFIX = {PHOTO_SIZE["small"]: "_s",  # photo file name
                     PHOTO_SIZE["medium"]: "_m"}
+    # image per page
+    PHOTO_PER_PAGE = 10
+    # user avatars
+    AVATARS_SAVE_PATH = os.path.join(base_dir, "avatars")
+    AVATARS_SIZE_TUPLE = (30, 100, 200)  # setting photo size for small,medium,big head portraits.

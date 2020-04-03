@@ -9,6 +9,7 @@ from flask_ckeditor import CKEditor
 from flask_bootstrap import Bootstrap
 from flask_mail import Mail
 from flask_dropzone import Dropzone
+from flask_avatars import Avatars
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -19,6 +20,7 @@ bootstrap = Bootstrap()
 mail = Mail()
 csrf = CSRFProtect()
 drop_zone = Dropzone()
+avatars = Avatars()
 
 
 class Guest(AnonymousUserMixin):
