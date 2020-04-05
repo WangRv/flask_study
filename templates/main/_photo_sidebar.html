@@ -90,9 +90,9 @@
             </div>
         {% endif %}
         {% if current_user.is_authenticated %}
-            {% if current_user.is_collecting(photo) %}
+            {% if current_user.is_collecting_photo(photo) %}
                 <form class="inline" method="post"
-                      action="{{ url_for('main.uncollect', photo_id=photo.id) }}">
+                      action="{{ url_for('main.uncollected', photo_id=photo.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-secondary btn-sm">
                         <span class="oi oi-x"></span> Uncollect

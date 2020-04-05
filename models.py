@@ -30,6 +30,8 @@ class User(db.Model, UserMixin):
     avatar_s = db.Column(db.String(64))
     avatar_m = db.Column(db.String(64))
     avatar_l = db.Column(db.String(64))
+    # collected photos
+    collections = db.relationship("Collect", back_populates="collector", cascade="all")
 
     def __init__(self, *args, **kwargs):
         super(User, self).__init__(*args, **kwargs)
@@ -70,12 +72,30 @@ class User(db.Model, UserMixin):
         return check_password_hash(self.password_hash, password)
 
     # -------------------------------------------------------------------------------------------------------
+    # User permission validated
     def can_permission(self, permission_data: int):
         return self.role.permission.data & permission_data == permission_data
 
     @property
     def is_admin(self):
         return self.can_permission(Permission.ADMINISTRATOR)
+
+    # -------------------------------------------------------------------------------------------------------
+    # User photo collected
+    def collect(self, photo):
+        if not self.is_collecting_photo(photo):
+            collect = Collect(collector=self, collected=photo)
+            db.session.add(collect)
+            db.session.commit()
+
+    def uncollected(self, photo):
+        collect = Collect.query.with_parent(self).filter_by(collected_id=photo.id).first()
+        if collect:
+            db.session.delete(collect)
+            db.session.commit()
+
+    def is_collecting_photo(self, photo):
+        return Collect.query.with_parent(self).filter_by(collected_id=photo.id).first() is not None
 
 
 # Many to Many relation with User. # not use now.
@@ -131,7 +151,17 @@ class Permission(db.Model):
     roles = db.relationship("Role", back_populates="permission")
 
 
-# Photo
+# many to many
+tagging = db.Table("tagging", db.Column("photo_id", db.Integer, db.ForeignKey("photo.id")),
+                   db.Column("tag_id", db.Integer, db.ForeignKey("tag.id")))
+
+
+class Tag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(30), index=True)
+    photos = db.relationship("Photo", secondary=tagging, back_populates="tags")
+
+
 class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(500))
@@ -146,6 +176,10 @@ class Photo(db.Model):
     filename_m = db.Column(db.String(64))
     # report flag count
     flag = db.Column(db.Integer, default=0)
+    # tag of photo
+    tags = db.relationship("Tag", secondary=tagging, back_populates="photos")
+    # collectors are collected this
+    collectors = db.relationship("Collect", back_populates="collected", cascade="all")
 
     def generate_different_size_photo(self):
         """if photo without other size format that generate these"""
@@ -157,6 +191,18 @@ class Photo(db.Model):
             db.session.commit()
 
 
+class Collect(db.Model):
+    """User collected photos model"""
+    collector_id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
+    collected_id = db.Column(db.Integer, db.ForeignKey("photo.id"), primary_key=True)
+
+    collector = db.relationship("User", back_populates="collections", lazy="joined")
+    collected = db.relationship("Photo", back_populates="collectors", lazy="joined")
+
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# Database Event
 @db.event.listens_for(Photo, "after_delete", named=True)
 def delete_photos(**kwargs):
     """delete image files by the path"""

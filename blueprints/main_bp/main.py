@@ -5,9 +5,10 @@ from flask import render_template, request, flash, current_app, send_from_direct
 from constant import HttpMethods, Permission
 from flask_login import login_required, current_user
 from decorators import confirm_user, permission_required
-from utils import random_file_name, resize_image
-from models import Photo
+from utils import random_file_name, flash_errors
+from models import Photo, Tag, Collect
 from extension import db
+from forms.photo import DescriptionForm, TagForm
 
 
 @main_bp.route("/")
@@ -30,7 +31,115 @@ def show_notifications(): pass
 @main_bp.route("/photo/<int:photo_id>")
 def show_photo(photo_id):
     photo = Photo.query.get_or_404(photo_id)
-    return render_template("main/photo.html", photo=photo)
+    description = DescriptionForm()
+    description.description.data = photo.description
+    tag_form = TagForm()
+    return render_template("main/photo.html", photo=photo, description_form=description, tag_form=tag_form)
+
+
+@main_bp.route("/photo/<int:photo_id>/description", methods=[HttpMethods.post.value])
+@login_required
+@permission_required(Permission.normal_user())
+def edit_description(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user != photo.author:
+        abort(404)
+    form = DescriptionForm()
+    if form.validate_on_submit():
+        photo.description = form.description.data
+        db.session.commit()
+        flash("Description updated", "success")
+    flash_errors(form)
+    return redirect(url_for(".show_photo", photo_id=photo_id))
+
+
+@main_bp.route("/photo/<int:photo_id>/tag/new", methods=[HttpMethods.post.value])
+@login_required
+def new_tag(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user != photo.author:
+        abort(404)
+    form = TagForm()
+    if form.validate_on_submit():
+        for name in form.tag.data.split():
+            tag = Tag.query.filter_by(name=name).first()
+            if tag is None:
+                tag = Tag(name=name)
+                db.session.add(tag)
+                db.session.commit()
+            if tag not in photo.tags:
+                photo.tags.append(tag)
+                db.session.commit()
+        flash("Tag added", "success")
+    flash_errors(form)
+    return redirect(url_for(".show_photo", photo_id=photo_id))
+
+
+@main_bp.route("/delete/tag/<int:photo_id>/<int:tag_id>", methods=[HttpMethods.post.value])
+@login_required
+def delete_tag(photo_id, tag_id):
+    tag = Tag.query.get_or_404(tag_id)
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user != photo.author:
+        abort(403)
+    photo.tags.remove(tag)
+    db.session.commit()
+
+    if not tag.photos:
+        db.session.delete(tag)
+        db.session.commit()
+    flash("Tag deleted.", "info")
+    return redirect(url_for(".show_photo", photo_id=photo_id))
+
+
+@main_bp.route("/tag/<int:tag_id>", defaults={"order": "by_time"})
+@main_bp.route("/tag/<int:tag_id>/<order>")
+def show_tag(tag_id, order):
+    tag = Tag.query.get_or_404(tag_id)
+    page = request.args.get("page", 1, type=int)
+    per_page = current_app.config["PHOTO_PER_PAGE"]
+    order_rule = "time"
+    pagination = Photo.query.with_parent(tag).order_by(Photo.timestampde.desc()).paginate(page, per_page)
+    photos = pagination.items
+    if order == "by_collects":
+        photos.sort(key=lambda x: len(x.collectors), reverse=True)
+        order_rule = "collects"
+    return render_template("main/tag.html", tag=tag, pagination=pagination, photos=photos, order_rule=order_rule)
+
+
+@main_bp.route("/collect/<int:photo_id>", methods=[HttpMethods.post.value])
+@login_required
+@confirm_user
+@permission_required(Permission.COLLECT.value)
+def collect(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user.is_collecting_photo(photo):
+        flash("Already collected.", "info")
+        return redirect(url_for(".show_photo", photo_id=photo_id))
+    current_user.collect(photo)
+    flash("Photo collected", "success")
+    return redirect(url_for(".show_photo", photo_id=photo_id))
+
+
+@main_bp.route("/uncollected/<int:photo_id>", methods=[HttpMethods.post.value])
+@login_required
+def uncollected(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if not current_user.is_collecting_photo(photo):
+        flash("You not collected this photo.", "info")
+    current_user.uncollected(photo)
+    flash("Photo uncollected", "info")
+    return redirect(url_for(".show_photo", photo_id=photo_id))
+
+
+@main_bp.route("/photo/<int:photo_id>/collectors")
+def show_collectors(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    page = request.args.get("page", 1, type=int)
+    per_page = current_app.config.get("USER_PER_PAGE", 5)
+    pagination = Collect.query.with_parent(photo).order_by(Collect.timestamp.asc()).paginate(page, per_page)
+    collects = pagination.items
+    return render_template("main/collectors.html", collects=collects, photo=photo, pagination=pagination)
 
 
 @main_bp.route("/photo/n/<int:photo_id>")
@@ -49,13 +158,13 @@ def photo_previous(photo_id):
     photo_n = Photo.query.with_parent(photo.author).filter(Photo.id > photo.id).order_by(Photo.id.asc()).first()
     if photo_n is None:
         flash("This is already the first one.", "info")
+        return redirect(url_for(".show_photo", photo_id=photo.id))
     return redirect(url_for(".show_photo", photo_id=photo_n.id))
 
 
 @main_bp.route("/delete-photo/<int:photo_id>", methods=[HttpMethods.post.value])
 @login_required
 def delete_photo(photo_id):
-    # @todo unfinished
     photo = Photo.query.get_or_404(photo_id)
     if current_user != photo.author:
         abort(403)

@@ -1,7 +1,7 @@
 import os
 
 from PIL import Image
-from flask import current_app, request, redirect, url_for
+from flask import current_app, request, redirect, flash, url_for
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from constant import Operations
 from extension import db
@@ -60,6 +60,7 @@ def random_file_name(name):
 
 
 def resize_image(image, filename, base_width):
+    """resize image to  generate different  size image"""
     filename, ext = os.path.splitext(filename)
     img = Image.open(image)
     if img.size[0] <= base_width:
@@ -71,3 +72,10 @@ def resize_image(image, filename, base_width):
     filename += current_app.config["PHOTO_SUFFIX"][base_width] + ext
     img.save(os.path.join(current_app.config["UPLOAD_PATH"], filename), optimize=True, quality=True)
     return filename
+
+
+def flash_errors(form):
+    """extracting all errors from form into the flash"""
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(f"Error in the {getattr(form, field).label.text} - {error}")
