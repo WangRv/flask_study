@@ -8,6 +8,18 @@ from extension import db
 from utils import resize_image
 
 
+class Follow(db.Model):
+    follower_id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # relationship attributes
+    follower = db.relationship("User", foreign_keys=[follower_id], back_populates="following", lazy="joined",
+                               cascade="all")
+    followed = db.relationship("User", foreign_keys=[followed_id], back_populates="followers", lazy="joined",
+                               cascade="all")
+
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     # User data
@@ -32,10 +44,20 @@ class User(db.Model, UserMixin):
     avatar_l = db.Column(db.String(64))
     # collected photos
     collections = db.relationship("Collect", back_populates="collector", cascade="all")
+    # user comments
+    comments = db.relationship("Comments", back_populates="author", cascade="all")
+    # follow attributes
+    following = db.relationship("Follow", foreign_keys=[Follow.follower_id], back_populates="follower", cascade="all",
+                                lazy="dynamic")
+    followers = db.relationship("Follow", foreign_keys=[Follow.followed_id], back_populates="followed", cascade="all",
+                                lazy="dynamic")
 
     def __init__(self, *args, **kwargs):
         super(User, self).__init__(*args, **kwargs)
+        # generate different size user's portraits.
         self.generate_avatar()
+        # user follow self.
+        self.follow(self)
 
     def generate_avatar(self):
         avatar = Identicon()
@@ -96,6 +118,30 @@ class User(db.Model, UserMixin):
 
     def is_collecting_photo(self, photo):
         return Collect.query.with_parent(self).filter_by(collected_id=photo.id).first() is not None
+
+    # following methods
+    def follow(self, user):
+        if not self.is_following(user):
+            follow = Follow(follower=self, followed=user)
+            db.session.add(follow)
+            db.session.commit()
+
+    def unfollow(self, user):
+        follow = self.following.filter_by(followed=user.id).first()
+        if follow:
+            db.session.delete(follow)
+            db.session.commit()
+
+    def is_following(self, user):
+        """To check if  the user is followed by me"""
+        if user.id is None:
+            # The user data not submit to database,the method immediately return False.
+            return False
+        return self.following.filter_by(followed_id=user.id).first() is not None
+
+    def is_followed_by(self, user):
+        """To check if user followed me"""
+        return self.followers.filter_by(follower_id=user.id).first() is not None
 
 
 # Many to Many relation with User. # not use now.
@@ -180,6 +226,9 @@ class Photo(db.Model):
     tags = db.relationship("Tag", secondary=tagging, back_populates="photos")
     # collectors are collected this
     collectors = db.relationship("Collect", back_populates="collected", cascade="all")
+    # comments for this Photo
+    can_comment = db.Column(db.Boolean, default=True)
+    comments = db.relationship("Comments", back_populates="photo", cascade="all")
 
     def generate_different_size_photo(self):
         """if photo without other size format that generate these"""
@@ -200,6 +249,25 @@ class Collect(db.Model):
     collected = db.relationship("Photo", back_populates="collectors", lazy="joined")
 
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Comments(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    author = db.relationship("User", back_populates="comments", uselist=False)
+
+    photo_id = db.Column(db.Integer, db.ForeignKey("photo.id"))
+    photo = db.relationship("Photo", back_populates="comments", uselist=False)
+
+    replied_id = db.Column(db.Integer, db.ForeignKey("comments.id"))
+    # replied comment fields that self correlation
+    replied = db.relationship("Comments", back_populates="replies", uselist=False, remote_side=[id])
+    replies = db.relationship("Comments", back_populates="replied", cascade="all")
+
+    # report flag
+    flag = db.Column(db.Integer, default=0)
 
 
 # Database Event

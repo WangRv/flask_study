@@ -13,3 +13,9 @@ class TagForm(FlaskForm):
     """Tag of photo Form"""
     tag = StringField("Add Tag (use space to separate)", validators=[Optional(), Length(0, 64)])
     submit = SubmitField()
+
+
+class CommentForm(FlaskForm):
+    """Form for comments"""
+    body = TextAreaField("Comment", validators=[Optional(), Length(0, 500)])
+    submit = SubmitField()

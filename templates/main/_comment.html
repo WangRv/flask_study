@@ -93,7 +93,7 @@
 
     {% if photo.can_comment %}
         {% if current_user.is_authenticated %}
-            {% if current_user.can('COMMENT') %}
+            {% if current_user.can_permission(permission.COMMENT) %}
                 {% if request.args.get('reply') %}
                     <div class="alert alert-dark">
                         Reply to {{ request.args.get('author') }}:

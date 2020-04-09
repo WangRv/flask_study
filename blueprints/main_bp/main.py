@@ -5,10 +5,10 @@ from flask import render_template, request, flash, current_app, send_from_direct
 from constant import HttpMethods, Permission
 from flask_login import login_required, current_user
 from decorators import confirm_user, permission_required
-from utils import random_file_name, flash_errors
-from models import Photo, Tag, Collect
+from utils import random_file_name, flash_errors, redirect_back
+from models import User, Photo, Tag, Collect, Comments
 from extension import db
-from forms.photo import DescriptionForm, TagForm
+from forms.photo import DescriptionForm, TagForm, CommentForm
 
 
 @main_bp.route("/")
@@ -34,7 +34,16 @@ def show_photo(photo_id):
     description = DescriptionForm()
     description.description.data = photo.description
     tag_form = TagForm()
-    return render_template("main/photo.html", photo=photo, description_form=description, tag_form=tag_form)
+    comment_form = CommentForm()
+    page = request.args.get("page", type=int)
+    per_page = current_app.config.get("COMMENT_PER_PAGE", 10)
+    pagination = Comments.query.with_parent(photo).order_by(
+        Comments.timestamp.desc()).paginate(page, per_page)
+    comments = pagination.items
+    return render_template("main/photo.html", photo=photo,
+                           description_form=description, tag_form=tag_form,
+                           comment_form=comment_form, pagination=pagination,
+                           comments=comments)
 
 
 @main_bp.route("/photo/<int:photo_id>/description", methods=[HttpMethods.post.value])
@@ -140,6 +149,110 @@ def show_collectors(photo_id):
     pagination = Collect.query.with_parent(photo).order_by(Collect.timestamp.asc()).paginate(page, per_page)
     collects = pagination.items
     return render_template("main/collectors.html", collects=collects, photo=photo, pagination=pagination)
+
+
+@main_bp.route("/photo/<int:photo_id>/set-comment",
+               methods=[HttpMethods.post.value])
+@login_required
+def set_comment(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user != photo.author:
+        abort(404)
+    condition = photo.can_comment
+    if condition:
+        photo.can_comment = False
+        flash("Photo comments disable", "info")
+    else:
+        photo.can_comment = True
+        flash("Photo comments enable", "info")
+    db.session.commit()
+    return redirect(url_for(".show_photo", photo_id=photo_id))
+
+
+@main_bp.route("/photo/<int:photo_id>/new-comment",
+               methods=[HttpMethods.post.value])
+@login_required
+@permission_required(Permission.COMMENT.value)
+def new_comment(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    comment_form = CommentForm()
+    if comment_form.validate_on_submit():
+        comment = Comments(body=comment_form.body.data,
+                           author=current_user._get_current_object(),
+                           photo=photo)
+
+        if request.args.get("reply"):
+            replied = Comments.query.get_or_404(request.args.get("reply", type=int))
+            comment.replied = replied
+
+        db.session.add(comment)
+        db.session.commit()
+    page = request.args.get("page", 1)
+    return redirect(url_for(".show_photo", photo_id=photo_id, page=page))
+
+
+@main_bp.route("/photo/<int:comment_id>/reply-comment")
+@login_required
+@permission_required(Permission.COMMENT.value)
+def reply_comment(comment_id):
+    comment = Comments.query.get_or_404(comment_id)
+    if comment.author == comment.author:
+        abort(404)
+    photo_id = comment.photo_id
+    reply = comment.id
+    return redirect(url_for(".show_photo", photo_id=photo_id, reply=reply))
+
+
+@main_bp.route("/photo/<int:comment_id>/delete-comment",
+               methods=[HttpMethods.post.value])
+@login_required
+def delete_comment(comment_id):
+    comment = Comments.query.get_or_404(comment_id)
+    if not current_user.can_permission(Permission.MODERATE.value) or \
+            current_user != comment.author:
+        abort(404)
+    photo_id = comment.photo_id
+    db.session.delete(comment)
+    db.session.commit()
+    return redirect(url_for(".show_photo", photo_id=photo_id))
+
+
+@main_bp.route("/follow/<username>", methods=[HttpMethods.post.value])
+@login_required
+@confirm_user
+@permission_required(Permission.FOLLOW.value)
+def follow(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if current_user.is_following(user):
+        flash("Already followed", "info")
+        return redirect(url_for(".index", username=username))
+    current_user.follow(user)
+    flash("User followed.", "info")
+    return redirect_back()
+
+
+@main_bp.route("/unfollow/<username>", methods=[HttpMethods.post.value])
+@login_required
+def unfollow(username):
+    user = User.query.fillter_by(username=username).first_or_404()
+    if not current_user.is_following(user):
+        flash("Not follow yet", "info")
+        return redirect(url_for(".index", username=username))
+    current_user.unfollow(user)
+    flash("User unfollowed", "info")
+    return redirect_back()
+
+
+@main_bp.route("/photo/<int:comment_id>/report-comment")
+@login_required
+@permission_required(Permission.normal_user())
+def report_comment(comment_id):
+    comment = Comments.query.get_or_404(comment_id)
+    if current_user == comment.author:
+        abort(404)
+    comment.flag += 1
+    db.session.commit()
+    return redirect(url_for(".show_photo", photo_id=comment.photo_id))
 
 
 @main_bp.route("/photo/n/<int:photo_id>")
