@@ -51,6 +51,8 @@ class User(db.Model, UserMixin):
                                 lazy="dynamic")
     followers = db.relationship("Follow", foreign_keys=[Follow.followed_id], back_populates="followed", cascade="all",
                                 lazy="dynamic")
+    # notifications
+    notifications = db.relationship("Notification", back_populates="receiver", cascade="all")
 
     def __init__(self, *args, **kwargs):
         super(User, self).__init__(*args, **kwargs)
@@ -268,6 +270,17 @@ class Comments(db.Model):
 
     # report flag
     flag = db.Column(db.Integer, default=0)
+
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message = db.Column(db.Text)
+    is_read = db.Column(db.Boolean, default=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    # relation ship
+    receiver_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    receiver = db.relationship("User", back_populates="notifications")
 
 
 # Database Event

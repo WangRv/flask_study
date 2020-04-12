@@ -1,7 +1,8 @@
+import blueprints.user_bp.user
 from . import ajax_bp
 from flask_login import current_user
 from flask import render_template, url_for, jsonify
-from models import User, Permission
+from models import User, Permission, Notification
 from constant import HttpMethods
 
 
@@ -10,7 +11,11 @@ def show_notifications(): pass
 
 
 @ajax_bp.route("/notifications-count")
-def notifications_count(): pass
+def notifications_count():
+    if not current_user.is_authenticated:
+        return jsonify(message="Login required"), 403
+    count = Notification.query.with_parent(current_user).filter_by(is_read=False).count()
+    return jsonify(count=count)
 
 
 @ajax_bp.route("/profile/<int:user_id>")
@@ -31,7 +36,7 @@ def follow(username):
     user = User.query.filter_by(username=username).first_or_404()
     if current_user.is_following(user):
         return jsonify(message="Already followed."), 400
-    current_user.follow(user)
+    blueprints.user_bp.user.follow(user)
     return jsonify(message="User followed.")
 
 
@@ -43,7 +48,7 @@ def unfollow(username):
     if not current_user.is_following(user):
         return jsonify(message="Not follow yet."), 400
 
-    current_user.unfollow(user)
+    blueprints.user_bp.user.unfollow(user)
     return jsonify(message="Follow canceled.")
 
 

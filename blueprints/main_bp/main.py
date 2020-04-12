@@ -2,13 +2,14 @@ import os
 
 from . import main_bp
 from flask import render_template, request, flash, current_app, send_from_directory, redirect, url_for, abort
-from constant import HttpMethods, Permission
+from constant import HttpMethods, Permission, QueryRule
 from flask_login import login_required, current_user
 from decorators import confirm_user, permission_required
-from utils import random_file_name, flash_errors, redirect_back
-from models import User, Photo, Tag, Collect, Comments
+from utils import random_file_name, flash_errors
+from models import Photo, Tag, Collect, Comments, Notification
 from extension import db
 from forms.photo import DescriptionForm, TagForm, CommentForm
+from notifications import push_collect_notification, push_comment_notification
 
 
 @main_bp.route("/")
@@ -25,7 +26,40 @@ def search(): pass
 
 
 @main_bp.route("/show-notifications")
-def show_notifications(): pass
+@login_required
+def show_notifications():
+    page = request.args.get("page", 1, type=int)
+    per_page = current_app.config.get("NOTIFICATION_PER_PAGE", 10)
+    notifications = Notification.query.with_parent(current_user)
+    filter_rule = request.args.get("filter")
+    if filter_rule == QueryRule.unread.value:
+        notifications = notifications.filter_by(is_read=False)
+    pagination = notifications.order_by(Notification.timestamp.desc()).paginate(page, per_page)
+    notifications = pagination.items
+    return render_template("main/notifications.html", pagination=pagination, notifications=notifications)
+
+
+@main_bp.route("/notification/read/<int:notification_id>", methods=[HttpMethods.post.value])
+@login_required
+def read_notification(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+    if current_user != notification.receiver:
+        abort(403)
+    notification.is_read = True
+    db.session.commit()
+    flash("Notification archived", "success")
+    return redirect(url_for(".show_notifications"))
+
+
+@main_bp.route("/notification/read/all", methods=[HttpMethods.post.value])
+@login_required
+def read_all_notification():
+    for notification in current_user.notifications:
+        # all set true for the each user's notification
+        notification.is_read = True
+    db.session.commit()
+    flash("All notifications archived", "success")
+    return redirect(url_for(".show_notifications"))
 
 
 @main_bp.route("/photo/<int:photo_id>")
@@ -126,6 +160,7 @@ def collect(photo_id):
         flash("Already collected.", "info")
         return redirect(url_for(".show_photo", photo_id=photo_id))
     current_user.collect(photo)
+    push_collect_notification(current_user, photo_id, photo.author)
     flash("Photo collected", "success")
     return redirect(url_for(".show_photo", photo_id=photo_id))
 
@@ -188,6 +223,9 @@ def new_comment(photo_id):
         db.session.add(comment)
         db.session.commit()
     page = request.args.get("page", 1)
+    # User notification
+
+    push_comment_notification(photo_id, photo.author, page)
     return redirect(url_for(".show_photo", photo_id=photo_id, page=page))
 
 
@@ -215,32 +253,6 @@ def delete_comment(comment_id):
     db.session.delete(comment)
     db.session.commit()
     return redirect(url_for(".show_photo", photo_id=photo_id))
-
-
-@main_bp.route("/follow/<username>", methods=[HttpMethods.post.value])
-@login_required
-@confirm_user
-@permission_required(Permission.FOLLOW.value)
-def follow(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    if current_user.is_following(user):
-        flash("Already followed", "info")
-        return redirect(url_for(".index", username=username))
-    current_user.follow(user)
-    flash("User followed.", "info")
-    return redirect_back()
-
-
-@main_bp.route("/unfollow/<username>", methods=[HttpMethods.post.value])
-@login_required
-def unfollow(username):
-    user = User.query.fillter_by(username=username).first_or_404()
-    if not current_user.is_following(user):
-        flash("Not follow yet", "info")
-        return redirect(url_for(".index", username=username))
-    current_user.unfollow(user)
-    flash("User unfollowed", "info")
-    return redirect_back()
 
 
 @main_bp.route("/photo/<int:comment_id>/report-comment")

@@ -42,5 +42,10 @@ class Permission(Enum):
         return 0xff
 
 
+class QueryRule(Enum):
+    unread: str = "UNREAD"
+    read: str = "READ"
+
+
 if __name__ == '__main__':
     print(Permission.administrator_user(), Permission.moderator_user(), Permission.anonymous_user())

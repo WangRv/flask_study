@@ -1,6 +1,12 @@
-from flask import request, current_app, render_template
-from . import user_bp
+from flask import request, current_app, render_template, flash, redirect, url_for
+from flask_login import login_required, current_user
+
+from constant import HttpMethods, Permission
+from decorators import confirm_user, permission_required
+from utils import redirect_back
 from models import User, Photo, Collect
+from notifications import push_follow_notification
+from . import user_bp
 
 
 @user_bp.route("/<username>")
@@ -50,3 +56,30 @@ def show_following(username):
 
 @user_bp.route("/change-avatar")
 def change_avatar(): pass
+
+
+@user_bp.route("/follow/<username>", methods=[HttpMethods.post.value])
+@login_required
+@confirm_user
+@permission_required(Permission.FOLLOW.value)
+def follow(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if current_user.is_following(user):
+        flash("Already followed", "info")
+        return redirect(url_for(".index", username=username))
+    current_user.follow(user)
+    flash("User followed.", "info")
+    push_follow_notification(follower=current_user, receiver=user)
+    return redirect_back()
+
+
+@user_bp.route("/unfollow/<username>", methods=[HttpMethods.post.value])
+@login_required
+def unfollow(username):
+    user = User.query.fillter_by(username=username).first_or_404()
+    if not current_user.is_following(user):
+        flash("Not follow yet", "info")
+        return redirect(url_for(".index", username=username))
+    current_user.unfollow(user)
+    flash("User unfollowed", "info")
+    return redirect_back()
