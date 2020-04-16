@@ -2,7 +2,7 @@ import blueprints.user_bp.user
 from . import ajax_bp
 from flask_login import current_user
 from flask import render_template, url_for, jsonify
-from models import User, Permission, Notification
+from models import User, Permission, Notification, Photo
 from constant import HttpMethods
 
 
@@ -57,3 +57,26 @@ def followers_count(user_id):
     user = User.query.get_or_404(user_id)
     count = user.followers.count() - 1
     return jsonify(count=count)
+
+
+@ajax_bp.route("/collectors-count/<int:photo_id>", methods=[HttpMethods.get.value])
+def collectors_count(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    count = len(photo.collectors)
+    return jsonify(count=count)
+
+
+@ajax_bp.route("/uncollect/<int:photo_id>", methods=[HttpMethods.post.value])
+def uncollect(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user.is_collecting_photo(photo):
+        current_user.uncollected(photo)
+        return jsonify(message="Photo uncollected.")
+
+
+@ajax_bp.route("/collect/<int:photo_id>", methods=[HttpMethods.post.value])
+def collect(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if not current_user.is_collecting_photo(photo):
+        current_user.collect(photo)
+    return jsonify(message="Photo collected.")

@@ -1,12 +1,13 @@
 import os
 
 from . import main_bp
+from sqlalchemy.sql.expression import func
 from flask import render_template, request, flash, current_app, send_from_directory, redirect, url_for, abort
 from constant import HttpMethods, Permission, QueryRule
 from flask_login import login_required, current_user
 from decorators import confirm_user, permission_required
 from utils import random_file_name, flash_errors
-from models import Photo, Tag, Collect, Comments, Notification
+from models import Photo, Tag, Collect, Comments, Notification, Follow
 from extension import db
 from forms.photo import DescriptionForm, TagForm, CommentForm
 from notifications import push_collect_notification, push_comment_notification
@@ -14,11 +15,27 @@ from notifications import push_collect_notification, push_comment_notification
 
 @main_bp.route("/")
 def index():
-    return render_template("main/index.html")
+    if current_user.is_authenticated:
+        followed_photos = Photo.query.join(Follow, Follow.followed_id == Photo.author_id
+                                           ).filter(Follow.follower_id == current_user.id
+                                                    ).order_by(Photo.timestamp.desc())  # join query
+        page = request.args.get("page", 1, type=int)
+        pagination = followed_photos.paginate(page,
+                                              per_page=current_app.config["PHOTO_PER_PAGE"])
+        photos = pagination.items
+        tags = Tag.query.join(Tag.photos).group_by(Tag.id).order_by(func.count(Photo.id).desc()).limit(10)
+    else:
+        pagination = None
+        photos = None
+        tags = None
+    return render_template("main/index.html", pagination=pagination, photos=photos, tags=tags)
 
 
 @main_bp.route("/explore")
-def explore(): pass
+def explore():
+    """randomly generate photos"""
+    photos = Photo.query.order_by(func.random()).limit(12)
+    return render_template("main/explore.html", photos=photos)
 
 
 @main_bp.route("/search")
@@ -160,7 +177,8 @@ def collect(photo_id):
         flash("Already collected.", "info")
         return redirect(url_for(".show_photo", photo_id=photo_id))
     current_user.collect(photo)
-    push_collect_notification(current_user, photo_id, photo.author)
+    if current_user.receive_collect_notification:
+        push_collect_notification(current_user, photo_id, photo.author)
     flash("Photo collected", "success")
     return redirect(url_for(".show_photo", photo_id=photo_id))
 
@@ -224,8 +242,8 @@ def new_comment(photo_id):
         db.session.commit()
     page = request.args.get("page", 1)
     # User notification
-
-    push_comment_notification(photo_id, photo.author, page)
+    if current_user.receive_comment_notification:
+        push_comment_notification(photo_id, photo.author, page)
     return redirect(url_for(".show_photo", photo_id=photo_id, page=page))
 
 

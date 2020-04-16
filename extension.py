@@ -34,4 +34,6 @@ class Guest(AnonymousUserMixin):
         return False
 
 
-LoginManager.anonymous_user = Guest
+login_manager.anonymous_user = Guest
+login_manager.refresh_view ="auth.re_authenticate"
+login_manager.needs_refresh_message_category = "warning"

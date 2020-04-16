@@ -1,5 +1,5 @@
 from . import auth_bp
-from flask_login import current_user, login_required, login_user, logout_user
+from flask_login import current_user, login_required, login_user, logout_user, login_fresh, confirm_login
 from flask import redirect, url_for, flash, render_template
 from forms.auth import UserRegisterForm, LoginForm, ForgetForm, ResetPasswordForm
 from models import User
@@ -128,3 +128,15 @@ def reset_password(token):
             flash("Invalid or expired token.", "danger")
             return redirect(url_for(".forget_password"))
     return render_template("auth/reset_password.html", form=form)
+
+
+@auth_bp.route("/re-authenticate", methods=HttpMethods.methods_to_list())
+@login_required
+def re_authenticate():
+    if login_fresh():
+        return redirect(url_for("main.index"))
+    form = LoginForm()
+    if form.validate_on_submit() and current_user.check_password(form.password.data):
+        confirm_login()
+        return redirect_back()
+    return render_template("auth/login.html", form=form)
