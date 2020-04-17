@@ -29,3 +29,15 @@ def permission_required(permission_data):
         return decorated_function
 
     return decorator
+
+
+def admin_required(func):
+    @wraps(func)
+    def required_admin(*args, **kwargs):
+        if not current_user.is_admin:
+            message = Markup("Access forbidden")
+            flash(message, "warning")
+            return redirect(url_for("main.index"))
+        return func(*args, **kwargs)
+
+    return required_admin

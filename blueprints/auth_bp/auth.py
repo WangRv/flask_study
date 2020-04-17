@@ -49,9 +49,13 @@ def login():
         remember = login_form.remember.data
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
-            login_user(user, remember)
+            if login_user(user, remember):
+                flash("Login success", "info")
 
-            return redirect_back()
+                return redirect_back()
+            else:
+                flash("Your account is blocked", "warning")
+                return redirect(url_for("main.index"))
         else:
             flash("Invalid email or password", "warning")
 

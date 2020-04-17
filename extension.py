@@ -10,6 +10,7 @@ from flask_bootstrap import Bootstrap
 from flask_mail import Mail
 from flask_dropzone import Dropzone
 from flask_avatars import Avatars
+from flask_whooshee import Whooshee
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -21,6 +22,7 @@ mail = Mail()
 csrf = CSRFProtect()
 drop_zone = Dropzone()
 avatars = Avatars()
+whooshee = Whooshee()
 
 
 class Guest(AnonymousUserMixin):
@@ -35,5 +37,5 @@ class Guest(AnonymousUserMixin):
 
 
 login_manager.anonymous_user = Guest
-login_manager.refresh_view ="auth.re_authenticate"
+login_manager.refresh_view = "auth.re_authenticate"
 login_manager.needs_refresh_message_category = "warning"

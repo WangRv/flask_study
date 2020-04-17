@@ -1,5 +1,5 @@
 from flask import request, current_app, render_template, flash, redirect, url_for
-from flask_login import login_required, current_user, fresh_login_required
+from flask_login import login_required, current_user, fresh_login_required, logout_user
 
 from constant import HttpMethods, Permission
 from decorators import confirm_user, permission_required
@@ -16,6 +16,12 @@ from . import user_bp
 @user_bp.route("/<username>")
 def index(username):
     user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user and user.locked:
+        flash("Your account is locked", "danger")
+    if user == current_user and not user.active:
+        logout_user()
+        return redirect(url_for("main.index"))
+
     page = request.args.get("page", 1, type=int)
     per_page = current_app.config["PHOTO_PER_PAGE"]
     pagination = Photo.query.with_parent(user).order_by(Photo.timestamp.desc()).paginate(page, per_page)
@@ -41,7 +47,7 @@ def change_password():
         db.session.commit()
         flash("Password updated", "success")
         return redirect(url_for(".index", username=current_user.username))
-    return render_template("user/settings/change_password.html",form=form)
+    return render_template("user/settings/change_password.html", form=form)
 
 
 @user_bp.route("/settings/email", methods=HttpMethods.methods_to_list())
@@ -72,7 +78,7 @@ def privacy_setting():
         flash("Privacy settings updated", "success")
         return redirect(url_for(".index", username=current_user.username))
     form.public_collections.data = current_user.public_collections
-    render_template("user/settings/edit_privacy.html", form=form)
+    return render_template("user/settings/edit_privacy.html", form=form)
 
 
 @user_bp.route("/settings/account")

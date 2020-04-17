@@ -4,7 +4,7 @@ from flask import current_app
 from flask_avatars import Identicon
 from werkzeug.security import generate_password_hash, check_password_hash  # password security
 from flask_login import UserMixin
-from extension import db
+from extension import db, whooshee
 from utils import resize_image
 
 
@@ -20,6 +20,7 @@ class Follow(db.Model):
                                cascade="all")
 
 
+@whooshee.register_model("username", "name")  # supported for text querying
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     # User data
@@ -59,6 +60,9 @@ class User(db.Model, UserMixin):
     receive_collect_notification = db.Column(db.Boolean, default=True)
     # only showed to myself or all users
     public_collections = db.Column(db.Boolean, default=True)
+    # active account
+    active = db.Column(db.Boolean, default=True)
+    locked = db.Column(db.Boolean, default=False)
 
     def __init__(self, *args, **kwargs):
         super(User, self).__init__(*args, **kwargs)
@@ -151,6 +155,26 @@ class User(db.Model, UserMixin):
         """To check if user followed me"""
         return self.followers.filter_by(follower_id=user.id).first() is not None
 
+    @property
+    def is_active(self):
+        return self.active
+
+    def block(self):
+        self.active = False
+        db.session.commit()
+
+    def unblock(self):
+        self.active = True
+        db.session.commit()
+
+    def lock(self):
+        self.locked = True
+        db.session.commit()
+
+    def unlock(self):
+        self.locked = False
+        db.session.commit()
+
 
 # Many to Many relation with User. # not use now.
 # roles_permissions = db.Table("roles_permissions",
@@ -210,12 +234,14 @@ tagging = db.Table("tagging", db.Column("photo_id", db.Integer, db.ForeignKey("p
                    db.Column("tag_id", db.Integer, db.ForeignKey("tag.id")))
 
 
+@whooshee.register_model("name")
 class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(30), index=True)
     photos = db.relationship("Photo", secondary=tagging, back_populates="tags")
 
 
+@whooshee.register_model("description")
 class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(500))

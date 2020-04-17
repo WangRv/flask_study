@@ -6,8 +6,8 @@ from flask import render_template, request, flash, current_app, send_from_direct
 from constant import HttpMethods, Permission, QueryRule
 from flask_login import login_required, current_user
 from decorators import confirm_user, permission_required
-from utils import random_file_name, flash_errors
-from models import Photo, Tag, Collect, Comments, Notification, Follow
+from utils import random_file_name, flash_errors, redirect_back
+from models import Photo, Tag, Collect, Comments, Notification, Follow, User
 from extension import db
 from forms.photo import DescriptionForm, TagForm, CommentForm
 from notifications import push_collect_notification, push_comment_notification
@@ -39,7 +39,23 @@ def explore():
 
 
 @main_bp.route("/search")
-def search(): pass
+def search():
+    q = request.args.get("q", "")
+    if q == "":
+        flash("Enter keyword about photo,user or tag", "warning")
+        return redirect_back()
+    category = request.args.get("category", "photo")
+    page = request.args.get("page", 1, type=int)
+    per_page = current_app.config.get("SEARCH_RESULT_PER_PAGE", 10)
+    if category == "user":
+        pagination = User.query.whooshee_search(q).paginate(page, per_page)
+    elif category == "tag":
+        pagination = Tag.query.whooshee_search(q).paginate(page, per_page)
+    else:
+        pagination = Photo.query.whooshee_search(q).paginate(page, per_page)
+    results = pagination.items
+    return render_template("main/search.html", q=q, results=results, pagination=pagination,
+                           category=category)
 
 
 @main_bp.route("/show-notifications")
@@ -159,7 +175,7 @@ def show_tag(tag_id, order):
     page = request.args.get("page", 1, type=int)
     per_page = current_app.config["PHOTO_PER_PAGE"]
     order_rule = "time"
-    pagination = Photo.query.with_parent(tag).order_by(Photo.timestampde.desc()).paginate(page, per_page)
+    pagination = Photo.query.with_parent(tag).order_by(Photo.timestamp.desc()).paginate(page, per_page)
     photos = pagination.items
     if order == "by_collects":
         photos.sort(key=lambda x: len(x.collectors), reverse=True)

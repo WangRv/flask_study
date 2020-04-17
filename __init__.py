@@ -8,7 +8,8 @@ sys.path.insert(0, parent_dir)
 
 from flask import Flask
 from extension import (
-    db, moment, login_manager, migrate, ck_editor, bootstrap, mail, csrf, drop_zone, avatars)
+    db, moment, login_manager, migrate, ck_editor, bootstrap, mail,
+    csrf, drop_zone, avatars, whooshee)
 from settings import DevConfig
 
 
@@ -34,6 +35,7 @@ def init_extension(app: Flask):
     csrf.init_app(app)
     drop_zone.init_app(app)
     avatars.init_app(app)
+    whooshee.init_app(app)
 
 
 def init_blueprint(app: Flask):
@@ -44,7 +46,7 @@ def init_blueprint(app: Flask):
     from blueprints.user_bp import user_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
-    app.register_blueprint(user_bp,url_prefix="/user")
+    app.register_blueprint(user_bp, url_prefix="/user")
     app.register_blueprint(main_bp)
     app.register_blueprint(ajax_bp)
 

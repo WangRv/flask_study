@@ -2,7 +2,7 @@ from flask_login import current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import (StringField, SubmitField, PasswordField,
-                     BooleanField, HiddenField, TextAreaField)
+                     BooleanField, HiddenField, TextAreaField, )
 from wtforms.validators import (DataRequired, Length, Email,
                                 Regexp, EqualTo, Optional)
 from wtforms import ValidationError
@@ -61,6 +61,8 @@ class EditProfileForm(FlaskForm):
                                                                                              "or only contain a-z "
                                                                                              "and 0-9 letter.")])
     bio = TextAreaField("Bio", validators=[Optional(), Length(0, 120)])
+    website = StringField("Website", validators=[DataRequired(), Length(6, 128)])
+    location = StringField("City", validators=[Optional(), Length(0, 120)])
 
     def validate_username(self, filed):
         # validate if username reused.
@@ -99,6 +101,7 @@ class NotificationSettingForm(FlaskForm):
     receive_comment_notification = BooleanField("New comment")
     receive_follow_notification = BooleanField("New follower")
     receive_collect_notification = BooleanField("New collector")
+    submit = SubmitField()
 
 
 class PrivacySettingForm(FlaskForm):

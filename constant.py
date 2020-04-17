@@ -43,8 +43,8 @@ class Permission(Enum):
 
 
 class QueryRule(Enum):
-    unread: str = "UNREAD"
-    read: str = "READ"
+    unread: str = "unread"
+    read: str = "read"
 
 
 if __name__ == '__main__':
